@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jadual Kerja Kalendar</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: #f4f7f6; padding: 15px; margin: 0; text-align: center; }
+        h2 { color: #333; margin-bottom: 5px; }
+        #monthLabel { font-size: 1.2rem; color: #555; margin-bottom: 20px; font-weight: 600; }
+        
+        /* Grid susunan hari Isnin - Ahad */
+        .days-header { display: grid; grid-template-columns: repeat(7, 1fr); max-width: 500px; margin: 0 auto; font-weight: bold; color: #777; font-size: 0.9rem; }
+        
+        /* Grid kotak kalendar */
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; max-width: 500px; margin: 5px auto 0 auto; }
+        
+        /* Kotak setiap hari */
+        .day-box { background: white; border: 1px solid #e0e0e0; border-radius: 6px; min-height: 70px; padding: 5px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; transition: 0.2s; }
+        .day-box:hover { background: #eef5ff; border-color: #007bff; }
+        .day-number { font-size: 0.85rem; font-weight: bold; color: #333; text-align: left; }
+        
+        /* Ruang nama pekerja di dalam kotak */
+        .worker-name { font-size: 0.75rem; background: #e1f5fe; color: #0288d1; border-radius: 4px; padding: 2px 4px; margin-top: 5px; word-break: break-word; font-weight: 600; text-align: center; }
+        .empty-box { background: transparent; border: none; }
+    </style>
+</head>
+<body>
+
+    <h2>Penjadualan Pekerja</h2>
+    <div id="monthLabel"></div>
+
+    <!-- Kepala Hari -->
+    <div class="days-header">
+        <div>Ahd</div><div>Isn</div><div>Sel</div><div>Rab</div><div>Kha</div><div>Jum</div><div>Sab</div>
+    </div>
+
+    <!-- Kotak Kalendar (Akan diisi oleh JavaScript) -->
+    <div class="calendar-grid" id="calendarGrid"></div>
+
+    <script>
+        const calendarGrid = document.getElementById('calendarGrid');
+        const monthLabel = document.getElementById('monthLabel');
+
+        // Dapatkan bulan dan tahun semasa
+        const hariIni = new Date();
+        const tahun = hariIni.getFullYear();
+        const bulan = hariIni.getMonth(); // Contoh: 0 = Januari, 5 = Jun
+
+        const namaBulan = ["Januari", "Februari", "Mac", "April", "Mei", "Jun", "Julai", "Ogos", "September", "Oktober", "November", "Disember"];
+        monthLabel.innerText = `${namaBulan[bulan]} ${tahun}`;
+
+        // Dapatkan hari pertama bulan ini jatuh pada hari apa (0 = Ahad, 1 = Isnin...)
+        const hariPertama = new Date(tahun, bulan, 1).getDay();
+        // Dapatkan jumlah hari dalam bulan ini
+        const jumlahHari = new Date(tahun, bulan + 1, 0).getDate();
+
+        // 1. Cipta kotak kosong untuk hari sebelum tarikh 1 hari bulan
+        for (let i = 0; i < hariPertama; i++) {
+            const emptyDiv = document.createElement('div');
+            emptyDiv.classList.add('day-box', 'empty-box');
+            calendarGrid.appendChild(emptyDiv);
+        }
+
+        // 2. Cipta kotak bagi setiap hari bulan
+        for (let hari = 1; hari <= jumlahHari; hari++) {
+            const dayBox = document.createElement('div');
+            dayBox.classList.add('day-box');
+
+            // ID unik untuk setiap tarikh supaya data tidak bercampur (Contoh: "2026-6-19")
+            const tarikhKey = `${tahun}-${bulan + 1}-${hari}`;
+            
+            // Ambil nama pekerja yang tersimpan di memori telefon (jika ada)
+            const namaTersimpan = localStorage.getItem(tarikhKey) || '';
+
+            // Masukkan nombor hari dan nama pekerja ke dalam kotak html
+            let paparanNama = namaTersimpan ? `<div class="worker-name">${namaTersimpan}</div>` : '';
+            dayBox.innerHTML = `<span class="day-number">${hari}</span>${paparanNama}`;
+
+            // Fungsi apabila kotak tarikh ditekan
+            dayBox.addEventListener('click', () => {
+                const namaBaru = prompt(`Masukkan nama pekerja untuk ${hari} ${namaBulan[bulan]}:`, namaTersimpan);
+                
+                // Jika pengguna tekan OK (bukan Cancel)
+                if (namaBaru !== null) {
+                    if (namaBaru.trim() === '') {
+                        localStorage.removeItem(tarikhKey); // Padam data jika input kosong
+                    } else {
+                        localStorage.setItem(tarikhKey, namaBaru); // Simpan nama pekerja baru
+                    }
+                    location.reload(); // Muat semula halaman untuk kemas kini paparan
+                }
+            });
+
+            calendarGrid.appendChild(dayBox);
+        }
+
+        // Daftarkan Service Worker untuk fungsi PWA (Offline mode)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').then(() => console.log("PWA Aktif"));
+        }
+    </script>
+</body>
+</html>
